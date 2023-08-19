@@ -7,26 +7,15 @@ import tracker.task.Task;
 
 import java.util.*;
 
-public class InMemoryTaskManager implements TaskManager, HistoryManager {
+public class InMemoryTaskManager implements TaskManager {
 
     HashMap<Long, Task> tasks = new HashMap<>();
     HashMap<Long, EpicTask> epicTasks = new HashMap<>();
     HashMap<Long, SubTask> subTasks = new HashMap<>();
-    HashMap<Long, Task> customLinkedList = new HashMap<>();
+
+    InMemoryHistoryManager memoryHistoryManager = new InMemoryHistoryManager();
 
     long newId = 0;
-
-    private final List<Task> taskViewHistory = new ArrayList<>();
-    private final List<Task> taskView = new ArrayList<>();
-
-    private static final int MAX_AMOUNT_TASKS_IN_HISTORI = 10;
-
-    private Node<Task> head;
-
-    private Node<Task> tail;
-
-    private int size = 0;
-
 
     //// Генерирует уникальный id для каждой новой полученной задачи
     @Override
@@ -107,19 +96,15 @@ public class InMemoryTaskManager implements TaskManager, HistoryManager {
     @Override
     public Task getTaskById(Long idTask) {
         if (tasks.containsKey(idTask)) {
-            //addHistory(tasks.get(idTask));
-            add(tasks.get(idTask));
+            memoryHistoryManager.add(tasks.get(idTask));
             return tasks.get(idTask);
         } else if (epicTasks.containsKey(idTask)) {
-            //addHistory(epicTasks.get(idTask));
-            add(epicTasks.get(idTask));
+            memoryHistoryManager.add(epicTasks.get(idTask));
             return epicTasks.get(idTask);
         } else if (subTasks.containsKey(idTask)) {
-            //addHistory(subTasks.get(idTask));
-            add(subTasks.get(idTask));
+            memoryHistoryManager.add(subTasks.get(idTask));
             return subTasks.get(idTask);
         }
-
         return null;
     }
 
@@ -146,7 +131,7 @@ public class InMemoryTaskManager implements TaskManager, HistoryManager {
     public void deleteTaskById(Long idTask) {
         if (idTask != null) {
             if (tasks.containsKey(idTask)) {
-                remove(idTask);
+                memoryHistoryManager.remove(idTask);
                 tasks.remove(idTask);
             } else if (epicTasks.containsKey(idTask)) {
                 //Если удаляем эпик задачу, нужно сначала удалить все её сабы
@@ -154,11 +139,11 @@ public class InMemoryTaskManager implements TaskManager, HistoryManager {
 
                 for (Long idSubTask : epicTask.getIdSubTasks()) {
                     if (subTasks.containsKey(idSubTask)) {
-                        remove(idSubTask);
+                        memoryHistoryManager.remove(idSubTask);
                         subTasks.remove(idSubTask);
                     }
                 }
-                remove(idTask);
+                memoryHistoryManager.remove(idTask);
                 epicTasks.remove(idTask);
             } else if (subTasks.containsKey(idTask)) {
                 //У эпика этой subTask нужно из ArrayList удалить id этой subTask
@@ -167,15 +152,13 @@ public class InMemoryTaskManager implements TaskManager, HistoryManager {
                 if (epicTasks.containsKey(idEpicTask)) {
                     ArrayList<Long> listIdSubTaskOnEpic = epicTasks.get(idEpicTask).getIdSubTasks();
                     if (listIdSubTaskOnEpic.contains(idTask)) {
-                        remove(idTask);
+                        memoryHistoryManager.remove(idTask);
                         listIdSubTaskOnEpic.remove(idTask);
                     }
                 }
-                remove(idTask);
+                memoryHistoryManager.remove(idTask);
                 subTasks.remove(idTask);
                 updateStatusEpicTask(epicTasks.get(idEpicTask)); //После удаления саба нужно обновить статус эпика
-
-
             }
         }
     }
@@ -255,42 +238,7 @@ public class InMemoryTaskManager implements TaskManager, HistoryManager {
 
     @Override
     public List<Task> getHistory() {
-        return taskView;
-    }
-
-    public void linkLast(Task element) {
-        final Node<Task> oldTail = tail;
-        final Node<Task> newNode = new Node<>(oldTail, element, null);
-        tail = newNode;
-        if (oldTail == null)
-            head = newNode;
-        else
-            oldTail.next = newNode;
-        size++;
-    }
-
-    public void getLast() {
-        final Node<Task> curTail = tail;
-        if (curTail == null)
-            throw new NoSuchElementException();
-        taskView.add(tail.data);
-    }
-
-    @Override
-    public void add(Task task) {
-        linkLast(task);
-        customLinkedList.put(task.getId(), task);
-        if (taskView.contains(task)) removeNode(task);
-        getLast();
-    }
-
-    @Override
-    public void remove(Long id) {
-        taskView.remove(customLinkedList.get(id));
-    }
-
-    public void removeNode(Task node) { //будет быстро удалять задачу из списка, если она там есть
-        taskView.remove(node);
+        return memoryHistoryManager.getHistory();
     }
 
 }
