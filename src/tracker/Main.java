@@ -21,6 +21,8 @@ public class Main {
                 "NEW", 0, 3);
         SubTask subTask3 = new SubTask("Билеты", "Купить билеты",
                 "NEW", 0, 3);
+        EpicTask epicTask2 = new EpicTask("Void", "voiding",
+                "NEW", 1);
 
         //проверка наполнения задачами
         manager.addSomeTask(task1);
@@ -29,22 +31,10 @@ public class Main {
         manager.addSomeTask(subTask1);
         manager.addSomeTask(subTask2);
         manager.addSomeTask(subTask3);
+        manager.addSomeTask(epicTask2);
 
-        //Проверка смены статусов
-        manager.changeStatusTask(new Task("Запустить приложение", "Run tracker.Main", "DONE", 1));
-        manager.changeStatusTask(new Task("Переезд", "Собрать коробки",
-                "IN_PROGRESS", 2));
 
-        manager.changeStatusSubTask(new SubTask("Уборка", "Сделать уборку перед отъездом",
-                "DONE", 4, 3));
 
-        manager.changeStatusSubTask(new SubTask("Сборы", "Собрать вещи",
-                "DONE", 5, 3));
-
-        manager.changeStatusSubTask(new SubTask("Билеты", "Купить билеты",
-                "IN_PROGRESS", 6, 3));
-
-        manager.deleteTaskById(6L); // После удаления задачи должен сменить статус у эпика на DONE
 
         // Проверка вывода истории
         manager.getTaskById(4L);
@@ -60,8 +50,15 @@ public class Main {
         manager.getTaskById(3L);
         manager.getTaskById(3L);
         manager.getTaskById(4L);
+        manager.getTaskById(7L);
 
-        System.out.println("История просмотра задча:");
+        System.out.println("История просмотра задач:");
+        for (Task task:manager.getHistory())
+            System.out.println(task);
+
+
+        manager.deleteTaskById(3L);
+        System.out.println("История просмотра задач после удаления:");
         for (Task task:manager.getHistory())
             System.out.println(task);
 
