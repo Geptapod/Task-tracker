@@ -27,6 +27,14 @@ public class Task {
         return id;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
     public void setId(long id) {
         this.id = id;
     }

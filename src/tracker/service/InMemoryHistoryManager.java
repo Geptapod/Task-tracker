@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-public class InMemoryHistoryManager implements HistoryManager{
+public class InMemoryHistoryManager implements HistoryManager {
 
     private Node<Task> head;
 
@@ -64,4 +64,5 @@ public class InMemoryHistoryManager implements HistoryManager{
     public List<Task> getHistory() {
         return taskView;
     }
+
 }

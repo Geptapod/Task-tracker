@@ -10,7 +10,7 @@ public class Main {
     public static void main(String[] args) {
         TaskManager manager = Managers.getDefault();
 
-        Task task1 = new Task("Запустить приложение", "Run tracker.Main", "NEW", 0);
+        Task task1 = new Task("Запустить приложение", "Run tracker", "NEW", 0);
         Task task2 = new Task("Переезд", "Собрать коробки",
                 "NEW", 0);
         EpicTask epicTask = new EpicTask("Поездка", "Поездка на дачу",

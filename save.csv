@@ -1,0 +1,10 @@
+id,type,name,status,description,epic
+1,TASK,Запустить приложение,NEW,Run tracker.Main,
+2,TASK,Переезд,NEW,Собрать коробки,
+3,TASK,Поездка,NEW,Поездка на дачу,[],
+4,TASK,Уборка,NEW,Сделать уборку перед отъездом,
+5,TASK,Сборы,NEW,Собрать вещи,
+6,TASK,Билеты,NEW,Купить билеты,
+7,TASK,Void,NEW,voiding,[],
+
+
