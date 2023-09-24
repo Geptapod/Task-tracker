@@ -9,11 +9,11 @@ import java.util.*;
 
 public class InMemoryTaskManager implements TaskManager {
 
-    HashMap<Long, Task> tasks = new HashMap<>();
-    HashMap<Long, EpicTask> epicTasks = new HashMap<>();
-    HashMap<Long, SubTask> subTasks = new HashMap<>();
+    protected HashMap<Long, Task> tasks = new HashMap<>();
+    protected HashMap<Long, EpicTask> epicTasks = new HashMap<>();
+    protected HashMap<Long, SubTask> subTasks = new HashMap<>();
 
-    InMemoryHistoryManager memoryHistoryManager = new InMemoryHistoryManager();
+    protected InMemoryHistoryManager memoryHistoryManager = new InMemoryHistoryManager();
 
     long newId = 0;
 
@@ -26,12 +26,12 @@ public class InMemoryTaskManager implements TaskManager {
     @Override
     public void addSomeTask(Task task) {
         if (task != null) {
-            if (task.getClass() == Task.class) {
-                addTask(task);
-            } else if (task.getClass() == EpicTask.class) {
+            if (task instanceof EpicTask) {
                 addEpicTask((EpicTask) task);
-            } else if (task.getClass() == SubTask.class) {
+            } else if (task instanceof SubTask) {
                 addSubTask((SubTask) task);
+            } else {
+                addTask(task);
             }
         }
     }

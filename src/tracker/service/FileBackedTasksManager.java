@@ -21,7 +21,7 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
 
     public static void main(String[] args) {
 
-        FileBackedTasksManager backed = new FileBackedTasksManager("save.txt");
+        FileBackedTasksManager backed = new FileBackedTasksManager("save.csv");
         Task task1 = new Task("Запустить приложение", "Run tracker", "NEW", 0);
         Task task2 = new Task("Переезд", "Собрать коробки",
                 "NEW", 0);
@@ -101,7 +101,7 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
                 tasks.add(fileReader.readLine());
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new ManagerSaveException();
         }
         List<Integer> history = historyFromString(tasks.get(tasks.size() - 1));
         tasks.remove(0);
@@ -135,13 +135,17 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
     //метод создания задачи из строки
     static private Task fromString(String value) {
         String[] str = value.split(",");
+        String name = str[2];
+        String description = str[4];
+        String status = str[3];
+        long id = Long.parseLong(str[0]);
         switch (TypesOfTask.valueOf(str[1])) {
             case TASK:
-                return new Task(str[2], str[4], str[3], Long.parseLong(str[0]));
+                return new Task(name, description, status, id);
             case SUBTASK:
-                return new SubTask(str[2], str[4], str[3], Long.parseLong(str[0]), Long.parseLong(str[5]));
+                return new SubTask(name, description, status, id, Long.parseLong(str[5]));
             case EPIC:
-                return new EpicTask(str[2], str[4], str[3], Long.parseLong(str[0]));
+                return new EpicTask(name, description, status, id);
             default:
         }
 
@@ -153,7 +157,7 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
         List<Task> viewHistory = manager.getHistory();
         for (Task task : viewHistory) {
             if (task != viewHistory.get(viewHistory.size() - 1)) {
-                builder.append(task.getId() + ",");
+                builder.append(task.getId()).append(",");
             } else {
                 builder.append(task.getId());
             }
@@ -172,19 +176,19 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
 
     private String taskToString(Task task) {
         StringBuilder builder = new StringBuilder();
-        builder.append(task.getId() + ",");
-        if (task.getClass() == Task.class) {
-            builder.append("TASK,");
+        builder.append(task.getId()).append(",");
+        if (task instanceof EpicTask) {
+            builder.append("EPIC,");
         } else if (task instanceof SubTask) {
             builder.append("SUBTASK,");
         } else {
-            builder.append("EPIC,");
+            builder.append("TASK,");
         }
-        builder.append(task.getName() + ",");
-        builder.append(task.getStatus() + ",");
+        builder.append(task.getName()).append(",");
+        builder.append(task.getStatus()).append(",");
         builder.append(task.getDescription());
         if (task instanceof SubTask) {
-            builder.append("," + ((SubTask) task).getIdEpicTask().toString());
+            builder.append(",").append(((SubTask) task).getIdEpicTask().toString());
         }
         return builder.toString();
     }
@@ -265,26 +269,6 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
     }
 }
 
-    /*@Override
-    public void addTask(Task task) {
-        super.addTask(task);
-        save(subTask);
-    }
 
-    public Task fromString(String value) {
-
-    }
-
-    @Override
-    public void addEpicTask(EpicTask epicTask) {
-        super.addEpicTask(epicTask);
-        save(subTask);
-    }
-
-    @Override
-    public void addSubTask(SubTask subTask) {
-        super.addSubTask(subTask);
-        save(subTask);
-    }*/
 
 

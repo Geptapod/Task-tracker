@@ -32,10 +32,11 @@ public class InMemoryHistoryManager implements HistoryManager {
 
     public Task getLast() {
         final Node<Task> curTail = tail;
-        if (curTail == null)
-            throw new NoSuchElementException();
-        taskView.add(tail.data);
-        return curTail.data;
+        if (curTail != null) {
+            taskView.add(tail.data);
+            return curTail.data;
+        }
+        return null;
     }
 
     public int size() {
@@ -52,12 +53,16 @@ public class InMemoryHistoryManager implements HistoryManager {
 
     @Override
     public void remove(Long id) {
-        taskView.remove(customLinkedList.get(id));
+        if (taskView.contains(id)) {
+            taskView.remove(customLinkedList.get(id));
+        }
     }
 
     public void removeNode(Task node) { //будет быстро удалять задачу из списка, если она там есть
-        taskView.remove(node);
-        size--;
+        if (taskView.contains(node)) {
+            taskView.remove(node);
+            size--;
+        }
     }
 
     @Override
