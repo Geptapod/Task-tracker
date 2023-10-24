@@ -1,13 +1,16 @@
 package tracker.task;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 public class SubTask extends Task {
 
     private long idEpicTask;
 
-    public SubTask(String name, String description, String status, long id, long idEpicTask) {
-        super(name, description, status, id);
+    public SubTask(String name, String description, String status, long id, long idEpicTask, Duration duration,
+                   LocalDateTime startTime) {
+        super(name, description, status, id, duration, startTime);
         this.idEpicTask = idEpicTask;
     }
 
@@ -41,6 +44,8 @@ public class SubTask extends Task {
         result = result +
                 ", status='" + status + '\'' +
                 ", id=" + id +
+                ", duration=" + duration +
+                ", startTime=" + startTime +
                 '}';
         return result;
     }

@@ -5,6 +5,9 @@ import tracker.task.Status;
 import tracker.task.SubTask;
 import tracker.task.Task;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 
 public class InMemoryTaskManager implements TaskManager {
@@ -15,7 +18,7 @@ public class InMemoryTaskManager implements TaskManager {
 
     protected InMemoryHistoryManager memoryHistoryManager = new InMemoryHistoryManager();
 
-    long newId = 0;
+    protected long newId = 0;
 
     //// Генерирует уникальный id для каждой новой полученной задачи
     @Override
@@ -23,16 +26,25 @@ public class InMemoryTaskManager implements TaskManager {
         return ++newId;
     }
 
+    /**
+     * Выполняется проверка типа добавляемой задачи и возможное пересечение по времени
+     */
     @Override
-    public void addSomeTask(Task task) {
+    public void addSomeTask(Task task) throws AddTaskException {
         if (task != null) {
             if (task instanceof EpicTask) {
                 addEpicTask((EpicTask) task);
             } else if (task instanceof SubTask) {
-                addSubTask((SubTask) task);
+                if (checkIntersectionsTime(task)) {
+                    addSubTask((SubTask) task);
+                }
             } else {
-                addTask(task);
+                if (checkIntersectionsTime(task)) {
+                    addTask(task);
+                }
             }
+        } else {
+            throw new AddTaskException("В метод добавления задач попал null");
         }
     }
 
@@ -44,8 +56,10 @@ public class InMemoryTaskManager implements TaskManager {
 
     @Override
     public void addEpicTask(EpicTask epicTask) {
-        epicTask.setId(generateNewId());
-        epicTasks.put(epicTask.getId(), epicTask);
+        if (!epicTasks.containsKey(epicTask.getId())) {
+            epicTask.setId(generateNewId());
+            epicTasks.put(epicTask.getId(), epicTask);
+        }
     }
 
     @Override
@@ -58,6 +72,10 @@ public class InMemoryTaskManager implements TaskManager {
 
         //После добавления новой саб задачи к эпику обновляем статус
         updateStatusEpicTask(epicTask);
+        //Обновление StartTime и Duration
+        updateStartTimeEpicTask(epicTask);
+        updateDurationEpicTask(epicTask);
+        epicTask.setEndTime(epicTask.getEndTime());
     }
 
     @Override
@@ -159,6 +177,8 @@ public class InMemoryTaskManager implements TaskManager {
                 memoryHistoryManager.remove(idTask);
                 subTasks.remove(idTask);
                 updateStatusEpicTask(epicTasks.get(idEpicTask)); //После удаления саба нужно обновить статус эпика
+                updateStartTimeEpicTask(epicTasks.get(idEpicTask));
+                updateDurationEpicTask(epicTasks.get(idEpicTask));
             }
         }
     }
@@ -236,10 +256,130 @@ public class InMemoryTaskManager implements TaskManager {
         }
     }
 
+    /**
+     * Метод обновления задачи
+     */
+    @Override
+    public void updateTask(Task task) {
+        if (task != null) {
+            if (task.getClass() == Task.class) {
+                if (tasks.containsKey(task.getId())) {
+                    if (checkIntersectionsTime(task)) { //проверяет насложение времени, если наложение не возникло вернёт true
+                        tasks.put(task.getId(), task);
+                    }
+                }
+            } else if (task.getClass() == EpicTask.class) {
+                if (epicTasks.containsKey(task.getId())) {
+                    epicTasks.put(task.getId(), (EpicTask) task);
+                }
+            } else if (task.getClass() == SubTask.class) {
+                if (subTasks.containsKey(task.getId())) {
+                    if (checkIntersectionsTime(task)) { //проверяет насложение времени, если наложение не возникло вернёт true
+                        subTasks.put(task.getId(), (SubTask) task);
+                        updateStatusEpicTask(epicTasks.get(((SubTask) task).getIdEpicTask()));
+                        updateStartTimeEpicTask(epicTasks.get(((SubTask) task).getIdEpicTask()));
+                        updateDurationEpicTask(epicTasks.get(((SubTask) task).getIdEpicTask()));
+                    }
+                }
+            }
+        }
+    }
+
     @Override
     public List<Task> getHistory() {
         return memoryHistoryManager.getHistory();
     }
 
+    private void updateDurationEpicTask(EpicTask epicTask) {
+        if (epicTask != null) {
+            List<Long> listIdSubTasks = epicTask.getIdSubTasks();
+            if (!listIdSubTasks.isEmpty()) {
+                Duration duration = listIdSubTasks.stream()
+                        .map(id -> subTasks.get(id).getDuration())
+                        .reduce(Duration.ZERO, Duration::plus);
+                epicTask.setDuration(duration);
+            }
+
+        }
+    }
+
+    private void updateStartTimeEpicTask(EpicTask epicTask) {
+        if (epicTask != null) {
+            List<Long> listIdSubTasks = epicTask.getIdSubTasks();
+            if (!listIdSubTasks.isEmpty()) {
+                LocalDateTime minDateTime = LocalDateTime.MAX;
+                for (Long id : listIdSubTasks) {
+                    if (subTasks.containsKey(id) && subTasks.get(id).getStartTime().isBefore(minDateTime)) {
+                        minDateTime = subTasks.get(id).getStartTime();
+                    }
+                }
+                epicTask.setStartTime(minDateTime);
+            }
+        }
+    }
+
+    /**
+     * Метод получения списка задач с приоритетом по полю starTime
+     */
+    public TreeSet<Task> getPrioritizedTasks() {
+        TreeSet<Task> prioritizedTasks = new TreeSet<>(new Comparator<Task>() {
+            @Override
+            public int compare(Task o1, Task o2) {
+                return (int) (o1.getStartTime().toEpochSecond(ZoneOffset.UTC) -
+                        o2.getStartTime().toEpochSecond(ZoneOffset.UTC));
+            }
+        });
+        prioritizedTasks.addAll(tasks.values());
+        prioritizedTasks.addAll(subTasks.values());
+        return prioritizedTasks;
+    }
+
+    /**
+     * Проверка пересечения дат
+     */
+    public boolean checkIntersectionsTime(Task task) {
+        boolean allowedToAddTask = true;
+        LocalDateTime startTask = task.getStartTime();
+        LocalDateTime endTask = task.getEndTime();
+
+        if (task != null && !getPrioritizedTasks().isEmpty()) {
+            for (Task taskFromSet : getPrioritizedTasks()) {
+                LocalDateTime startTaskFromSet = taskFromSet.getStartTime();
+                LocalDateTime endTaskFromSet = taskFromSet.getEndTime();
+                if (startTask.isEqual(startTaskFromSet)//начало совпадает
+                        || (startTask.isBefore(startTaskFromSet) && endTask.isAfter(startTaskFromSet))//началась раньше но заканчивается раньше
+                        || (startTask.isAfter(startTaskFromSet) && endTask.isBefore(endTaskFromSet)) //началась позже но заканчивается раньше
+                        || endTask.isEqual(endTaskFromSet)
+                ) {
+                    allowedToAddTask = false;
+                }
+            }
+        }
+        return allowedToAddTask;
+    }
+
+    @Override
+    public List<Task> getTasksList() {
+        return new ArrayList<>(tasks.values());
+    }
+
+    @Override
+    public List<EpicTask> getEpicTasksList() {
+        return new ArrayList<>(epicTasks.values());
+    }
+
+    @Override
+    public List<SubTask> getSubTaskForEpic(Long idEpicTask) {
+
+        List<SubTask> list = new ArrayList<>();
+
+        if (epicTasks.containsKey(idEpicTask)) {
+            EpicTask epicTask = epicTasks.get(idEpicTask);
+            for (Long id : epicTask.getIdSubTasks()) {
+                list.add(subTasks.get(id));
+            }
+        }
+        return list;
+    }
 }
 

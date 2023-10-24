@@ -6,12 +6,19 @@ import tracker.task.Task;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.TreeSet;
 
 public interface TaskManager {
+    /**
+     * Метод генерации уникального номера
+     */
     long generateNewId();
 
-
-    void addSomeTask(Task task);
+    /**
+     * Методы добаления задач
+     */
+    void addSomeTask(Task task) throws AddTaskException;
 
     void addTask(Task task);
 
@@ -19,6 +26,9 @@ public interface TaskManager {
 
     void addSubTask(SubTask subTask);
 
+    /**
+     * Методы получения задач
+     */
     void getTasks();
 
     void getEpicTasks();
@@ -27,7 +37,15 @@ public interface TaskManager {
 
     Object getTaskById(Long idTask);
 
-    //Методы удаления задач
+    List<Task> getTasksList();
+
+    List<EpicTask> getEpicTasksList();
+
+    List<SubTask> getSubTaskForEpic(Long idEpicTask);
+
+    /**
+     * Методы удаления задач
+     */
     void deleteTasks();
 
     void deleteEpicTasks();
@@ -42,8 +60,12 @@ public interface TaskManager {
 
     void changeStatusSubTask(SubTask subTask);
 
+    void updateTask(Task task);
+
     //Метод для обновления статуса у эпик задачи
     void updateStatusEpicTask(EpicTask epicTask);
 
     List<Task> getHistory();
+
+    TreeSet<Task> getPrioritizedTasks();
 }
